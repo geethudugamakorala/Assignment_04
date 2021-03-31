@@ -65,7 +65,15 @@ for t in range(iterations):
     b1 -= lr * db1
     lr *= lr_decay
 
-
+batch_size=y_pred.shape[0]
+K=y_pred.shape[1]
+y_pred_test=x_test.dot(w1)+b1
+batch_size_test=y_pred_test.shape[0]
+K_test=y_pred_test.shape[1]
+train_acc = 1.0 - (1/(batch_size*K))*(np.abs(np.argmax(y_train, axis=1) - np.argmax(y_pred, axis=1))).sum()
+print('train acc =',train_acc)
+test_acc = 1.0 - (1/(batch_size_test*K_test))*(np.abs(np.argmax(y_test, axis=1) - np.argmax(y_pred_test, axis=1))).sum()
+print('train acc =',test_acc)
 
 x_axis=np.arange(len(loss_history))
 plt.plot(x_axis,loss_history)
