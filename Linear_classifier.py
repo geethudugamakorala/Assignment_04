@@ -1,5 +1,3 @@
-H = 200
-std = 1e-6
 import tensorflow as tf
 from tensorflow import keras
 import numpy as np
@@ -24,14 +22,13 @@ x_test = np.reshape(x_test, (Nte, Din))
 x_train = x_train.astype('float32')
 x_test = x_test.astype('float32')
 std = 1e-5
-w1 = std * np.random.randn(Din, H)
-w2 = std * np.random.randn(H,K)
-b1 = np.zeros(H)
-b2 = np.zeros(K)
+w1 = std * np.random.randn(Din, K)
+b1 = np.zeros(K)
+
 print("w1:", w1.shape)
 print("b1:", b1.shape)
 batch_size = Ntr
-iterations = round(Ntr / batch_size)
+iterations = 300
 lr = 1.4e-2
 lr_decay = 0.999
 reg = 5e-6
@@ -45,21 +42,19 @@ for t in range(iterations):
     rng.shuffle(indices)
     x = x_train[indices]
     y = y_train[indices]
-    h = 1.0 / (1.0 + np.exp(-(x.dot(w1) + b1)))
-    y_pred = h.dot(w2) + b2
-    loss = 1. / batch_size * np.square(y_pred - y).sum() + reg * (np.sum(w2 * w2) + np.sum(w1 * w1))
+    y_pred = x.dot(w1) + b1
+    loss = 1. / batch_size * np.square(y_pred - y).sum() + reg * ( np.sum(w1 * w1))
     loss_history.append(loss)
     if t % 10 == 0:
         print('iteration %d / %d: loss %f' % (t, iterations, loss))
 
     dy_pred = 1. / batch_size * 2.0 * (y_pred - y)
-    dw2 = h.T.dot(dy_pred) + reg * w2
-    db2 = dy_pred.dot(w2.T)
-    dh = dy_pred.dot(w2.T)
-    dw1 = x.T.dot(dh * h * (1 - h)) + reg * w1
-    db1 = (dh * h * (1 - h)).sum(axis=0)
+    dw1 = x.T.dot(dy_pred) + reg * w1
+    db1 = dy_pred.sum(axis=0)
     w1 -= lr * dw1
-    w2 -= lr * dw2
     b1 -= lr * db1
-    b2 -= lr * db2
     lr *= lr_decay
+
+
+x_axis=np.arange(len(loss_history))
+plt.plot(x_axis,loss_history)
