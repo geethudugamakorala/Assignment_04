@@ -58,3 +58,4 @@ for t in range(iterations):
 
 x_axis=np.arange(len(loss_history))
 plt.plot(x_axis,loss_history)
+plt.show()
