@@ -2,6 +2,8 @@ import tensorflow as tf
 from tensorflow import keras
 import numpy as np
 import matplotlib.pyplot as plt
+import cv2 as cv
+import time
 
 (x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
 print("x_train :", x_train.shape)
@@ -32,12 +34,19 @@ iterations = 300
 lr = 1.4e-2
 lr_decay = 0.999
 reg = 5e-6
+t = 2
+count = 0
+start = time.time()
 loss_history = []
 train_acc_history = []
 val_acc_history = []
+images=[]
 seed = 0
 rng = np.random.default_rng(seed=seed)
 for t in range(iterations):
+    time.sleep(t/1000)
+    count += 1
+
     indices = np.arange(Ntr)
     rng.shuffle(indices)
     x = x_train[indices]
@@ -47,6 +56,7 @@ for t in range(iterations):
     loss_history.append(loss)
     if t % 10 == 0:
         print('iteration %d / %d: loss %f' % (t, iterations, loss))
+        print('Learning rate -' , 60*count/(time.time()-start) , 'epochs per minute')
 
     dy_pred = 1. / batch_size * 2.0 * (y_pred - y)
     dw1 = x.T.dot(dy_pred) + reg * w1
@@ -56,6 +66,20 @@ for t in range(iterations):
     lr *= lr_decay
 
 
+
 x_axis=np.arange(len(loss_history))
 plt.plot(x_axis,loss_history)
+
 plt.show()
+
+for i in range(w1.shape[1]):
+    temp=np.reshape(w1[:,i]*255,(32,32,3))
+    temp=cv.normalize(temp, None, 0, 255, cv.NORM_MINMAX, cv.CV_8U)
+    images.append(temp)
+fig,ax=plt.subplots(2,5 ,figsize=(30,10))
+for i in range(2):
+    for j in range(5):
+        ax[i,j].imshow(images[i*5+j],vmin=0,vmax=255)
+plt.show()
+
+
