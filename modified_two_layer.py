@@ -1,3 +1,5 @@
+H = 200
+#std = 1e-6
 import tensorflow as tf
 from tensorflow import keras
 import numpy as np
@@ -13,7 +15,7 @@ Nte = x_test.shape[0]
 Din = 3072  # CIFAR10
 # Din = 784 # MINIST
 # Normalize pixel values
-x_train, x_test = x_train / 255.0, x_test / 255.0
+#x_train, x_test = x_train / 255.0, x_test / 255.0
 mean_image = np.mean(x_train, axis=0)
 x_train = x_train - mean_image
 x_test = x_test - mean_image
@@ -23,10 +25,15 @@ x_train = np.reshape(x_train, (Ntr, Din))
 x_test = np.reshape(x_test, (Nte, Din))
 x_train = x_train.astype('float32')
 x_test = x_test.astype('float32')
-std = 1e-5
-w1 = std * np.random.randn(Din, K)
-b1 = np.zeros(K)
 
+t1 = 2   #increase to reduce training speed
+count = 0
+start = time.time()
+std = 1e-5
+w1 = std * np.random.randn(Din, H)
+w2 = std * np.random.randn(H,K)
+b1 = np.zeros(H)
+b2 = np.zeros(K)
 print("w1:", w1.shape)
 print("b1:", b1.shape)
 batch_size = Ntr
@@ -34,37 +41,44 @@ iterations = 300
 lr = 1.4e-2
 lr_decay = 0.999
 reg = 5e-6
-t = 2   #increase to reduce training speed
-count = 0
-start = time.time()
 loss_history = []
 train_acc_history = []
 val_acc_history = []
-images=[]
 seed = 0
 rng = np.random.default_rng(seed=seed)
 for t in range(iterations):
-    time.sleep(t/1000)
-    count += 1
+
 
     indices = np.arange(Ntr)
     rng.shuffle(indices)
-    x = x_train[indices]
-    y = y_train[indices]
-    y_pred = x.dot(w1) + b1
-    loss = 1. / batch_size * np.square(y_pred - y).sum() + reg * ( np.sum(w1 * w1))
-    loss_history.append(loss)
-    if t % 10 == 0:
-        print('iteration %d / %d: loss %f' % (t, iterations, loss))
-        print('Learning rate -' , 60*count/(time.time()-start) , 'epochs per minute')
+    for num in range(100):
+        time.sleep(t1 / 1000)
+        count += 1
+        indices1 = indices[(num*500):((num+1)*500)]
+        x = x_train[indices1]
+        y = y_train[indices1]
+        h = 1.0 / (1.0 + np.exp(-(x.dot(w1) + b1)))
+        y_pred = h.dot(w2) + b2
+        batch_size1 = x.shape[0]
+        loss = 1. / batch_size1 * np.square(y_pred - y).sum() + reg * (np.sum(w2 * w2) + np.sum(w1 * w1))
+        loss_history.append(loss)
+        if num % 10 == 0:
+            print('iteration %d / %d: loss %f' % (t, iterations, loss))
+            print('Learning rate -', 60 * count / (time.time() - start), 'epochs per minute')
+        dy_pred = 1. / batch_size * 2.0 * (y_pred - y)
+        dw2 = h.T.dot(dy_pred) + reg * w2
+        db2 = dy_pred.sum(axis=0)
+        dh = dy_pred.dot(w2.T)
+        dw1 = x.T.dot(dh * h * (1 - h)) + reg * w1
+        db1 = (dh * h * (1 - h)).sum(axis=0)
+        w1 -= lr * dw1
+        w2 -= lr * dw2
+        b1 -= lr * db1
+        b2 -= lr * db2
+        lr *= lr_decay
 
-    dy_pred = 1. / batch_size * 2.0 * (y_pred - y)
-    dw1 = x.T.dot(dy_pred) + reg * w1
-    db1 = dy_pred.sum(axis=0)
-    w1 -= lr * dw1
-    b1 -= lr * db1
-    lr *= lr_decay
-
+print('iteration %d / %d: loss %f' % (t, iterations, loss))
+print('Learning rate -', 60 * count / (time.time() - start), 'epochs per minute')
 batch_size=y_pred.shape[0]
 K=y_pred.shape[1]
 y_pred_test=x_test.dot(w1)+b1
@@ -79,15 +93,3 @@ x_axis=np.arange(len(loss_history))
 plt.plot(x_axis,loss_history)
 
 plt.show()
-
-for i in range(w1.shape[1]):
-    temp=np.reshape(w1[:,i]*255,(32,32,3))
-    temp=cv.normalize(temp, None, 0, 255, cv.NORM_MINMAX, cv.CV_8U)
-    images.append(temp)
-fig,ax=plt.subplots(2,5 ,figsize=(30,10))
-for i in range(2):
-    for j in range(5):
-        ax[i,j].imshow(images[i*5+j],vmin=0,vmax=255)
-plt.show()
-
-

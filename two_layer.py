@@ -1,9 +1,11 @@
 H = 200
-std = 1e-6
+#std = 1e-6
 import tensorflow as tf
 from tensorflow import keras
 import numpy as np
 import matplotlib.pyplot as plt
+import cv2 as cv
+import time
 
 (x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
 print("x_train :", x_train.shape)
@@ -13,7 +15,7 @@ Nte = x_test.shape[0]
 Din = 3072  # CIFAR10
 # Din = 784 # MINIST
 # Normalize pixel values
-x_train, x_test = x_train / 255.0, x_test / 255.0
+#x_train, x_test = x_train / 255.0, x_test / 255.0
 mean_image = np.mean(x_train, axis=0)
 x_train = x_train - mean_image
 x_test = x_test - mean_image
@@ -23,6 +25,10 @@ x_train = np.reshape(x_train, (Ntr, Din))
 x_test = np.reshape(x_test, (Nte, Din))
 x_train = x_train.astype('float32')
 x_test = x_test.astype('float32')
+
+t1 = 2   #increase to reduce training speed
+count = 0
+start = time.time()
 std = 1e-5
 w1 = std * np.random.randn(Din, H)
 w2 = std * np.random.randn(H,K)
@@ -41,6 +47,9 @@ val_acc_history = []
 seed = 0
 rng = np.random.default_rng(seed=seed)
 for t in range(iterations):
+    time.sleep(t1 / 1000)
+    count += 1
+
     indices = np.arange(Ntr)
     rng.shuffle(indices)
     x = x_train[indices]
@@ -51,7 +60,7 @@ for t in range(iterations):
     loss_history.append(loss)
     if t % 10 == 0:
         print('iteration %d / %d: loss %f' % (t, iterations, loss))
-
+        print('Learning rate -', 60 * count / (time.time() - start), 'epochs per minute')
     dy_pred = 1. / batch_size * 2.0 * (y_pred - y)
     dw2 = h.T.dot(dy_pred) + reg * w2
     db2 = dy_pred.sum(axis=0)
@@ -63,3 +72,20 @@ for t in range(iterations):
     b1 -= lr * db1
     b2 -= lr * db2
     lr *= lr_decay
+
+print('iteration %d / %d: loss %f' % (t, iterations, loss))
+print('Learning rate -', 60 * count / (time.time() - start), 'epochs per minute')
+batch_size=y_pred.shape[0]
+K=y_pred.shape[1]
+y_pred_test=x_test.dot(w1)+b1
+batch_size_test=y_pred_test.shape[0]
+K_test=y_pred_test.shape[1]
+train_acc = 1.0 - (1/(batch_size*K))*(np.abs(np.argmax(y_train, axis=1) - np.argmax(y_pred, axis=1))).sum()
+print('train acc =',train_acc)
+test_acc = 1.0 - (1/(batch_size_test*K_test))*(np.abs(np.argmax(y_test, axis=1) - np.argmax(y_pred_test, axis=1))).sum()
+print('test acc =',test_acc)
+
+x_axis=np.arange(len(loss_history))
+plt.plot(x_axis,loss_history)
+
+plt.show()
