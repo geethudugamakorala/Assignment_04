@@ -31,7 +31,7 @@ b2 = np.zeros(K)
 print("w1:", w1.shape)
 print("b1:", b1.shape)
 batch_size = Ntr
-iterations = round(Ntr / batch_size)
+iterations = 300
 lr = 1.4e-2
 lr_decay = 0.999
 reg = 5e-6
@@ -54,7 +54,7 @@ for t in range(iterations):
 
     dy_pred = 1. / batch_size * 2.0 * (y_pred - y)
     dw2 = h.T.dot(dy_pred) + reg * w2
-    db2 = dy_pred.dot(w2.T)
+    db2 = dy_pred.sum(axis=0)
     dh = dy_pred.dot(w2.T)
     dw1 = x.T.dot(dh * h * (1 - h)) + reg * w1
     db1 = (dh * h * (1 - h)).sum(axis=0)
