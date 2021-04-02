@@ -34,7 +34,7 @@ model.add(layers.Flatten())
 model.add(layers.Dense(64, activation='relu'))
 model.add(layers.Dense(10))
 
-print(model.summary())
+
 opt = tf.keras.optimizers.SGD(learning_rate=0.1, momentum=0.1)
 
 model.compile(optimizer=opt,
@@ -43,7 +43,7 @@ model.compile(optimizer=opt,
 
 history = model.fit(train_images, train_labels, epochs=5,batch_size=50,
                     validation_data=(test_images, test_labels))
-
+print(model.summary())
 plt.plot(history.history['accuracy'], label='accuracy')
 plt.plot(history.history['val_accuracy'], label = 'val_accuracy')
 plt.xlabel('Epoch')
